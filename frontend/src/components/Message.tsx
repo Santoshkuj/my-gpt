@@ -30,9 +30,9 @@ const Message = ({ message }: { message: Message }) => {
               className="w-full max-w-md mt-2"
             />
           ) : (
-            <p className="text-sm dark:text-primary reset-tw">
+            <div className="text-sm dark:text-primary reset-tw">
               <Markdown>{message.content}</Markdown>
-            </p>
+            </div>
           )}
           <span className="text-xs text-gray-400 dark:text-[#B1A6C0]">
             {moment(message.timestamp).fromNow()}

@@ -35,10 +35,10 @@ export async function stripeWebhooks(req: Request, res: Response) {
                     payment_intent: paymentIntent.id
                 })
                 const session = sessionlist.data[0]
-                const { transactionId, appid } = session.metadata!
-                console.log(transactionId,'transactionId', appid, 'appid');
+                const { transactionId, appId } = session.metadata!
+                console.log(transactionId,'transactionId', appId, 'appid');
 
-                if (appid === 'my-Gpt') {
+                if (appId === 'my-Gpt') {
                     const transaction = await Transaction.findOneAndUpdate({
                         _id: transactionId,
                         isPaid: false

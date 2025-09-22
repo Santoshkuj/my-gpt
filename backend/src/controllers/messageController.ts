@@ -9,7 +9,7 @@ import imagekit from "../configs/imageKit.js";
 export async function messageController(req: Request, res: Response) {
     try {
         const userId = req.user?._id
-        const { chatId, promt } = req.body
+        const { chatId, prompt } = req.body
 
         if (!req.user?.credits) {
             return res.json({
@@ -23,7 +23,7 @@ export async function messageController(req: Request, res: Response) {
 
         const userMessage = {
             role: 'user',
-            content: promt,
+            content: prompt,
             timestamp: Date.now(),
             isImage: false
         }
@@ -34,7 +34,7 @@ export async function messageController(req: Request, res: Response) {
                 { role: "system", content: "You are a helpful assistant." },
                 {
                     role: "user",
-                    content: promt,
+                    content: prompt,
                 },
             ],
         });
@@ -65,6 +65,7 @@ export async function messageController(req: Request, res: Response) {
             reply
         })
     } catch (error) {
+        console.log('message error', error);
         res.status(500).json({
             success: false,
             error: getErrorMessage(error)
@@ -90,7 +91,7 @@ export async function imageController(req: Request, res: Response) {
                 error: 'Chat not found'
             })
         }
-        const userMessage= {
+        const userMessage = {
             role: 'user',
             content: prompt,
             isImage: false,
@@ -101,9 +102,9 @@ export async function imageController(req: Request, res: Response) {
 
         const generateImageUrl = `${process.env.IMAGEKIT_URL}/ik-genimg-prompt-${encodedPrompt}/myGpt/${Date.now()}.png?tr=w-800,h-800`
 
-        const imagekitRes = await axios.get(generateImageUrl,{responseType:'arraybuffer'})
+        const imagekitRes = await axios.get(generateImageUrl, { responseType: 'arraybuffer' })
 
-        const base64Image = `data:image/png;base64,${Buffer.from(imagekitRes.data,'binary').toString('base64')}`
+        const base64Image = `data:image/png;base64,${Buffer.from(imagekitRes.data, 'binary').toString('base64')}`
 
         const uploadResponse = await imagekit.upload({
             file: base64Image,
@@ -118,22 +119,25 @@ export async function imageController(req: Request, res: Response) {
             isImage: true,
             isPublished
         }
-        const result = await Chat.updateOne({_id:chatId, userId},{
-            $push:{
-                $each: [userMessage, reply]
+        const result = await Chat.updateOne({ _id: chatId, userId }, {
+            $push: {
+                    messages: {
+                    $each: [userMessage, reply]
+                }
             }
         })
-         if (result.matchedCount === 0) {
+        if (result.matchedCount === 0) {
             return res.status(404).json({ success: false, error: "Chat updation failed" });
         }
-        await User.updateOne({_id: userId},{
-            $inc: {credits: -2}
+        await User.updateOne({ _id: userId }, {
+            $inc: { credits: -2 }
         })
-         res.json({
+        res.json({
             success: true,
             reply
         })
     } catch (error) {
+        console.log('image error: ', error);
         res.status(500).json({
             success: false,
             error: getErrorMessage(error)

@@ -1,16 +1,38 @@
+import useAppContext from "context/AppContext";
 import { useState, type FormEvent } from "react";
+import toast from "react-hot-toast";
 
 const Login = () => {
   const [state, setState] = useState<string>("login");
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const { axiosInstance,fetchUser } = useAppContext();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+    e.preventDefault();
+    const url = state === "login" ? "/api/user/login" : "/api/user/register";
+
+    try {
+      const {data} = await axiosInstance.post(url,{name,email,password})
+      if (data.success) {
+        fetchUser()
+      }else {
+        toast(data.error)
+      }
+    } catch (error) {
+      console.log(error);
+      if (error instanceof Error) {
+        toast.error(error.message)
+      }
+    }
+
   }
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 m-auto items-start p-8 py-12 w-80 sm:w-[352px] text-gray-500 rounded-lg shadow-xl border border-gray-200 bg-white">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-4 m-auto items-start p-8 py-12 w-80 sm:w-[352px] text-gray-500 rounded-lg shadow-xl border border-gray-200 bg-white"
+    >
       <p className="text-2xl font-medium m-auto">
         <span className="text-purple-700">User</span>{" "}
         {state === "login" ? "Login" : "Sign Up"}
@@ -71,7 +93,10 @@ const Login = () => {
           </span>
         </p>
       )}
-      <button type="submit" className="bg-purple-700 hover:bg-purple-800 transition-all text-white w-full py-2 rounded-md cursor-pointer">
+      <button
+        type="submit"
+        className="bg-purple-700 hover:bg-purple-800 transition-all text-white w-full py-2 rounded-md cursor-pointer"
+      >
         {state === "register" ? "Create Account" : "Login"}
       </button>
     </form>

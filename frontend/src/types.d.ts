@@ -1,3 +1,4 @@
+import type { AxiosInstance } from "axios";
 import type { Dispatch, SetStateAction } from "react";
 import type { useNavigate } from "react-router-dom";
 
@@ -15,6 +16,11 @@ declare global {
         setSelectedChat: Dispatch<SetStateAction<Chat | null>>;
         theme: Theme;
         setTheme: Dispatch<SetStateAction<Theme>>;
+        createNewChat : () => void;
+        loadingUser: boolean;
+        fetchUserChats: ()=> void;
+        axiosInstance: AxiosInstance;
+        logOut: ()=> void
     }
 
     interface User {
@@ -27,7 +33,7 @@ declare global {
     type Theme = 'light' | 'dark';
     type Message = {
         isImage: boolean;
-        isPublished: boolean;
+        isPublished?: boolean;
         role: "user" | "assistant";
         content: string;
         timestamp: number;

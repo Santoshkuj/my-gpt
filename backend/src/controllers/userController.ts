@@ -38,14 +38,14 @@ export async function registerUser(req: Request, res: Response) {
         const user = await User.create({ name, email, password })
 
         const token = generateToken(user._id)
-        res.json({
-            success: true,
-            message: 'user registrered successfull'
-        })
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             maxAge: 30 * 24 * 60 * 60 * 1000
+        })
+        res.json({
+            success: true,
+            message: 'user registrered successfull'
         })
     } catch (error) {
         return res.json({
@@ -72,14 +72,14 @@ export async function loginUser(req: Request, res: Response) {
 
             if (checkPassword) {
                 const token = generateToken(user._id)
-                res.json({
-                    success: true,
-                    message: 'Logged in successfull'
-                })
                 res.cookie('token', token, {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production',
                     maxAge: 30 * 24 * 60 * 60 * 1000
+                })
+                return res.json({
+                    success: true,
+                    message: 'Logged in successfull'
                 })
             }
         }
@@ -121,7 +121,7 @@ export async function getPublicImages(req: Request, res: Response) {
                 $project: {
                     _id: 0,
                     imageUrl: "$messages.content",
-                    username: "$userName"
+                    userName: "$userName"
                 }
             }
         ])
@@ -136,4 +136,17 @@ export async function getPublicImages(req: Request, res: Response) {
             error: getErrorMessage(error)
         })
     }
+}
+
+export async function logOut(req: Request, res: Response) {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+  
+    return res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.log(error);
+  }
 }

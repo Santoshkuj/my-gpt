@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express'
 import cors from 'cors'
 import 'dotenv/config'
+import cookieParser from "cookie-parser"
+
 import connectDB from './configs/db.js'
 import userRouter from './routes/userRoutes.js'
 import chatRouter from './routes/chatRoutes.js'
@@ -13,8 +15,12 @@ const app = express()
 await connectDB()
 app.post('/api/stripe',express.raw({type:'application/json'}), stripeWebhooks)
 
-app.use(cors())
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+}))
 app.use(express.json())
+app.use(cookieParser())
 
 app.get('/',(req:Request,res:Response)=> res.send('Server is live'))
 app.use('/api/user', userRouter)

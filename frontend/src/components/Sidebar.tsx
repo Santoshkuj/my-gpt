@@ -1,7 +1,9 @@
 import { assets } from "assets/assets";
+import { AxiosError } from "axios";
 import useAppContext from "context/AppContext";
 import moment from "moment";
 import { useState, type Dispatch, type SetStateAction } from "react";
+import toast from "react-hot-toast";
 
 const Sidebar = ({
   menuOpen,
@@ -10,13 +12,51 @@ const Sidebar = ({
   menuOpen: boolean;
   setMenuOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-  const { chats, setSelectedChat, theme, setTheme, user, navigate } =
-    useAppContext();
+  const {
+    chats,
+    setSelectedChat,
+    theme,
+    setTheme,
+    user,
+    navigate,
+    createNewChat,
+    setChats,
+    fetchUserChats,
+    logOut,
+    axiosInstance,
+  } = useAppContext();
   const [search, setSearch] = useState<string>("");
   const handleSelectChat = (chat: Chat) => {
     navigate("/");
     setSelectedChat(chat);
     setMenuOpen(false);
+  };
+
+  const deleteChat = async (
+    e: React.MouseEvent<HTMLImageElement>,
+    chatId: string
+  ) => {
+    try {
+      e.preventDefault();
+      const confirm = window.confirm(
+        "Are you sure, you want to delete this chat"
+      );
+      if (!confirm) {
+        return;
+      }
+      const { data } = await axiosInstance.post("/api/chat/delete", { chatId });
+
+      if (data.success) {
+        setChats((prev) => prev.filter((chat) => chat._id !== chatId));
+        toast.success(data?.message);
+        await fetchUserChats();
+      }
+    } catch (error) {
+      console.log(error);
+      if (error instanceof AxiosError) {
+        toast.error(error?.response?.data?.error);
+      }
+    }
   };
 
   return (
@@ -30,7 +70,10 @@ const Sidebar = ({
         alt="logo"
         className="w-full max-w-48"
       />
-      <button className="flex justify-center items-center w-full py-2 mt-10 text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors duration-300 text-sm cursor-pointer">
+      <button
+        onClick={createNewChat}
+        className="flex justify-center items-center w-full py-2 mt-10 text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors duration-300 text-sm cursor-pointer"
+      >
         <span className="mr-2 text-xl">+</span> New Chat
       </button>
 
@@ -54,7 +97,8 @@ const Sidebar = ({
         {chats
           .filter((chat) =>
             chat.messages[0]
-              ? chat.messages[0].content
+              ? typeof chat.messages[0].content === "string" &&
+                chat.messages[0].content
                   .toLowerCase()
                   .includes(search.toLowerCase())
               : chat.name.toLowerCase().includes(search.toLowerCase())
@@ -68,7 +112,8 @@ const Sidebar = ({
             >
               <div>
                 <p className="truncate w-full">
-                  {chat.messages.length > 0
+                  {chat.messages.length > 0 &&
+                  typeof chat.messages[0].content === "string"
                     ? chat.messages[0].content.slice(0, 20)
                     : chat.name}
                 </p>
@@ -77,6 +122,11 @@ const Sidebar = ({
                 </p>
               </div>
               <img
+                onClick={(e) =>
+                  toast.promise(deleteChat(e, chat._id), {
+                    loading: "deleting...",
+                  })
+                }
                 src={assets.bin_icon}
                 alt="delete"
                 className="hidden group-hover:block w-4 cursor-pointer not-dark:invert"
@@ -158,6 +208,7 @@ const Sidebar = ({
         </p>
         {user && (
           <img
+            onClick={logOut}
             src={assets.logout_icon}
             className="h-5 cursor-pointer hidden not-dark:invert group-hover:block"
           />

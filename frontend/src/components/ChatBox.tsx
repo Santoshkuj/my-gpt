@@ -2,15 +2,17 @@ import { assets } from "assets/assets";
 import useAppContext from "context/AppContext";
 import { useEffect, useRef, useState } from "react";
 import Message from "./Message";
+import toast from "react-hot-toast";
+import { AxiosError } from "axios";
 
 const ChatBox = () => {
-  const { selectedChat, theme } = useAppContext();
+  const { selectedChat, theme, user, axiosInstance, setUser } = useAppContext();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [prompt, setPrompt] = useState<string>("");
   const [mode, setMode] = useState<Mode>("text");
-  const [published, setPublished] = useState<boolean>(false);
-  const containerRef = useRef<HTMLInputElement | null>(null)
+  const [isPublished, setPublished] = useState<boolean>(false);
+  const containerRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (selectedChat) {
@@ -18,17 +20,55 @@ const ChatBox = () => {
     }
   }, [selectedChat]);
 
-  useEffect(()=>{
+  useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTo({
         top: containerRef.current.scrollHeight,
-        behavior: 'smooth'
-      })
+        behavior: "smooth",
+      });
     }
-  },[messages])
+  }, [messages]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+    try {
+      e.preventDefault();
+      if (!user) return toast.error("Login to send message");
+      setLoading(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "user",
+          content: prompt,
+          timestamp: Date.now(),
+          isImage: false,
+        },
+      ]);
+      setPrompt("");
+
+      const { data } = await axiosInstance.post(`/api/message/${mode}`, {
+        chatId: selectedChat?._id,
+        prompt,
+        isPublished,
+      });
+      if (data.success) {
+        setMessages((prev) => [...prev, data.reply]);
+        if (mode === "image") {
+          setUser((prev) => ({ ...prev!, credits: (prev?.credits ?? 0) - 2 }));
+        } else {
+          setUser((prev) => ({ ...prev!, credits: (prev?.credits ?? 0) - 1 }));
+        }
+      } else {
+        toast.error(data.error);
+      }
+    } catch (error) {
+      console.log(error);
+      if (error instanceof AxiosError) {
+        toast.error(error?.response?.data?.error);
+      }
+    } finally {
+      setPrompt('')
+      setLoading(false)
+    }
   }
 
   return (
@@ -61,8 +101,12 @@ const ChatBox = () => {
       {mode === "image" && (
         <label className="inline-flex items-center gap-2 mb-3 text-sm  mx-auto">
           <p className="text-xs">Publish Generates Image to Community</p>
-          <input type="checkbox" className="cursor-pointer"
-          checked={published} onChange={(e)=>setPublished(e.target.checked)}/>
+          <input
+            type="checkbox"
+            className="cursor-pointer"
+            checked={isPublished}
+            onChange={(e) => setPublished(e.target.checked)}
+          />
         </label>
       )}
 
@@ -87,9 +131,10 @@ const ChatBox = () => {
           placeholder="Type your prompt here..."
           className="flex-1 w-full text-sm outline-none"
           required
+          value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
         />
-        <button disabled={loading}>
+        <button disabled={loading} type="submit">
           <img
             src={loading ? assets.stop_icon : assets.send_icon}
             alt="send"

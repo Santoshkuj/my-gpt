@@ -15,6 +15,7 @@ interface JwtPayload extends jwt.JwtPayload {
 export async function auth(req: Request, res: Response, next: NextFunction) {
     let token = req.cookies?.token
     if (!token) {
+        console.log('token is missing');
         return res.status(401).json({
             success: false,
             error: 'Unauthenticated. Log in again'

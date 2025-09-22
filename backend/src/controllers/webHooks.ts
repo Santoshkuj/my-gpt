@@ -8,6 +8,7 @@ import User from "../models/user.js";
 export async function stripeWebhooks(req: Request, res: Response) {
     const stripe = new Stripe(process.env.STRIPE_SECRET!)
     const sig = req.headers["stripe-signature"]
+    console.log('webhook verifying');
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
         throw new Error('stripe webhook secret is missing in environement variables')
@@ -35,6 +36,7 @@ export async function stripeWebhooks(req: Request, res: Response) {
                 })
                 const session = sessionlist.data[0]
                 const { transactionId, appid } = session.metadata!
+                console.log(transactionId,'transactionId', appid, 'appid');
 
                 if (appid === 'my-Gpt') {
                     const transaction = await Transaction.findOneAndUpdate({

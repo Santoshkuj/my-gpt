@@ -5,6 +5,6 @@ import { getPlans, purchasePlan } from "../controllers/creditController.js";
 const creditRouter = Router()
 
 creditRouter.get('/plan',auth,getPlans)
-creditRouter.get('/purchase',auth,purchasePlan)
+creditRouter.post('/purchase',auth,purchasePlan)
 
 export default creditRouter
